@@ -59,7 +59,7 @@ jobs:
           
           while IFS= read -r line; do
             if [[ -n "$line" ]]; then
-              TRACKERS+=("-w" "$line")
+              TRACKERS+=("-a" "$line")
             fi
           done < trackers.txt          
 
