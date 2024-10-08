@@ -39,6 +39,7 @@ jobs:
             echo "    zip $repo"
             zip_file="${repo_name}.7z"
             release_url="https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=$zip_file"
+            tracker_url="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/$zip_file"
             7z a -mx=9 -bd "$local_folder/$zip_file" "$local_folder/$repo_name/*"  -x!$local_folder/$repo_name/.git
             rm -rf "$local_folder/$repo_name"
 
@@ -49,9 +50,9 @@ jobs:
               "$release_url"              
             
             if [ -z "$WEBSEEDS" ]; then
-              WEBSEEDS="$release_url"
+              WEBSEEDS="$tracker_url"
             else
-              WEBSEEDS="$WEBSEEDS,$release_url"
+              WEBSEEDS="$WEBSEEDS,$tracker_url"
             fi
               
           done
