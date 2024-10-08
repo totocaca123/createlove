@@ -1,0 +1,73 @@
+name: Create release
+
+on:
+  release:
+    types: [published]
+    
+permissions:
+  contents: write
+
+jobs:
+  create_packages:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Install mktorrent (an open-source tool to create .torrent files)
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y p7zip mktorrent
+        
+      - name: Download tracker list
+        run: curl -s -o trackers.txt https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all.txt
+
+     
+      - name: Download repositories
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+        run: |
+          GROUP="mantap7091041"
+          local_folder="local-dir"
+          mkdir -p $local_folder  
+          repos=$(curl -s "https://gitlab.com/api/v4/groups/$GROUP/projects" | jq -r '.[].http_url_to_repo')
+          WEBSEEDS=""
+  
+          for repo in $repos; do          
+
+            echo "**** Clone $repo ****"
+            repo_name=$(basename "$repo" .git)
+            git clone --quiet "$repo" "$local_folder/$repo_name"
+
+            echo "    zip $repo"
+            zip_file="${repo_name}.7z"
+            release_url="https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=$zip_file"
+            7z a -mx=9 -bd "$local_folder/$zip_file" "$local_folder/$repo_name/*"  -x!$local_folder/$repo_name/.git
+            rm -rf "$local_folder/$repo_name"
+
+            echo "    copy $zip_file to release https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=$zip_file"
+            curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: application/7z-x-compressed" \
+              -T "$local_folder/$zip_file" -X POST \
+              "$release_url"              
+            
+            if [ -z "$WEBSEEDS" ]; then
+              WEBSEEDS="$release_url"
+            else
+              WEBSEEDS="$WEBSEEDS,$release_url"
+            fi
+              
+          done
+          
+          while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+              TRACKERS+=("-w" "$line")
+            fi
+          done < trackers.txt          
+
+          mktorrent "${TRACKERS[@]}" \
+                    -w $WEBSEEDS \
+                    -o "mytorrent.torrent" "./$local_folder"
+
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/x-bittorrent" \
+            -T "mytorrent.torrent" -X POST \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=mytorrent.torrent"
+ 
