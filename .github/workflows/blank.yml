@@ -25,7 +25,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
         run: |
           GROUP="mantap7091041"
-          local_folder="local-dir"
+          local_folder=""${{ github.event.release.tag_name }}""
           mkdir -p $local_folder  
           repos=$(curl -s "https://gitlab.com/api/v4/groups/$GROUP/projects" | jq -r '.[].http_url_to_repo')
           WEBSEEDS=""
@@ -54,11 +54,10 @@ jobs:
               TRACKERS+=("-a" "$line")
             fi
           done < trackers.txt          
-          cd $local_folder
+
           mktorrent "${TRACKERS[@]}" \
-                    -w "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/" \
-                    -o ../mytorrent.torrent .
-          cd ..
+                    -w "https://github.com/${{ github.repository }}/releases/download/" \
+                    -o mytorrent.torrent .
 
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
             -H "Content-Type: application/x-bittorrent" \
