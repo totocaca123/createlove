@@ -39,7 +39,6 @@ jobs:
             echo "    zip $repo"
             zip_file="${repo_name}.7z"
             release_url="https://uploads.github.com/repos/${{ github.repository }}/releases/${{ github.event.release.id }}/assets?name=$zip_file"
-            tracker_url="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/$zip_file"
             7z a -mx=9 -bd "$local_folder/$zip_file" "$local_folder/$repo_name/*"  -x!$local_folder/$repo_name/.git
             rm -rf "$local_folder/$repo_name"
 
@@ -47,14 +46,7 @@ jobs:
             curl -s -H "Authorization: token $GITHUB_TOKEN" \
               -H "Content-Type: application/7z-x-compressed" \
               -T "$local_folder/$zip_file" -X POST \
-              "$release_url"              
-            
-            if [ -z "$WEBSEEDS" ]; then
-              WEBSEEDS="$tracker_url"
-            else
-              WEBSEEDS="$WEBSEEDS,$tracker_url"
-            fi
-              
+              "$release_url"            
           done
           
           while IFS= read -r line; do
@@ -64,7 +56,7 @@ jobs:
           done < trackers.txt          
 
           mktorrent "${TRACKERS[@]}" \
-                    -w $WEBSEEDS \
+                    -w "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/" \ \
                     -o "mytorrent.torrent" "./$local_folder"
 
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
