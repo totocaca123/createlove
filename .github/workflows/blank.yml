@@ -54,10 +54,11 @@ jobs:
               TRACKERS+=("-a" "$line")
             fi
           done < trackers.txt          
-
+          cd $local_folder
           mktorrent "${TRACKERS[@]}" \
                     -w "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/" \
-                    -o "mytorrent.torrent" "./$local_folder"
+                    -o ../mytorrent.torrent .
+          cd ..
 
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
             -H "Content-Type: application/x-bittorrent" \
