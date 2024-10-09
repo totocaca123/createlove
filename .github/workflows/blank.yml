@@ -57,7 +57,7 @@ jobs:
 
           mktorrent "${TRACKERS[@]}" \
                     -w "https://github.com/${{ github.repository }}/releases/download/" \
-                    -o mytorrent.torrent .
+                    -o mytorrent.torrent ./$local_folder
 
           curl -s -H "Authorization: token $GITHUB_TOKEN" \
             -H "Content-Type: application/x-bittorrent" \
